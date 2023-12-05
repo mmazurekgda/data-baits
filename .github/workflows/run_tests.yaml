@@ -1,13 +1,12 @@
-name: Run pytests
+name: Run pytests & prepare data baits
 
 on: [push]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
-
+    permissions:
+        contents: write
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.11
@@ -24,3 +23,19 @@ jobs:
     - name: Test with pytest
       run: |
         conda run -n data-baits-env pytest test
+    - name: Set up data baits
+      run: |
+        find generators/ -type f -name "*.py" | while read file; do
+            conda run -n data-baits-env python $file
+        done
+    - name: Autocommit data baits
+      uses: stefanzweifel/git-auto-commit-action@v5
+      if: github.ref != 'refs/heads/main'
+      with:
+        commit_message: "Set up data baits :space_invader:"
+        file_pattern: 'baits/*.yaml'
+        commit_user_name: Michał Mazurek
+        commit_user_email: mmazurekgda@gmail.com
+        commit_author: Michał Mazurek <mmazurekgda@gmail.com>
+        skip_fetch: true    
+        skip_checkout: true
