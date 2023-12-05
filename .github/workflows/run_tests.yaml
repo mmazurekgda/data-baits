@@ -25,12 +25,13 @@ jobs:
         conda run -n data-baits-env pytest test
     - name: Set up data baits
       run: |
-        find generators/ -type f -name "*.py" | while read file; do
+        find generators/ -type f -name "*.py" -a -not -name "__init__.py" | while read file; do
+            echo "Setting up data bait on $file"
             conda run -n data-baits-env python $file
         done
     - name: Autocommit data baits
       uses: stefanzweifel/git-auto-commit-action@v5
-      if: github.ref != 'refs/heads/main'
+      # if: github.ref != 'refs/heads/main'
       with:
         commit_message: "Set up data baits :space_invader:"
         file_pattern: 'baits/*.yaml'
