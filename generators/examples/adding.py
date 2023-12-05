@@ -10,4 +10,8 @@ if __name__ == "__main__":
         base_image="python:3.11.5",
     )(add)
 
-    compiler.Compiler().compile(add_op, "baits/adding.yaml")
+    compiler.Compiler().compile(
+        add_op,
+        "baits/adding.yaml",
+        "[Data-Baits Tutorial]Adding",
+    )
