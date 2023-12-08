@@ -12,6 +12,6 @@ if __name__ == "__main__":
 
     compiler.Compiler().compile(
         add_op,
-        "baits/adding.yaml",
+        "baits/examples/adding.yaml",
         "[Data-Baits Tutorial]Adding",
     )
