@@ -123,6 +123,7 @@ def design_secret(
             {
                 "container_info": container_info,
                 "volume_info": volume_info,
+                "secret_name": secret_name,
             }
         )
 
@@ -164,7 +165,17 @@ if __name__ == "__main__":
     with open(f"{project_path}/manifests/base/deployment.yaml") as fp:
         data = yaml.load(fp)
 
+    kustomization_dict = {
+        "apiVersion": "kustomize.config.k8s.io/v1beta1",
+        "kind": "Kustomization",
+        "resources": [
+            "../base",
+            "deployment.yaml",
+        ],
+    }
+
     env_data = defaultdict(lambda: data.copy())
+    kus_data = defaultdict(lambda: kustomization_dict.copy())
 
     for info_source in [
         pipeline_info,
@@ -178,6 +189,9 @@ if __name__ == "__main__":
                 env_data[env]["spec"]["template"]["spec"]["volumes"].append(
                     single_info["volume_info"]
                 )
+                kus_data[env]["resources"].append(
+                    f"{single_info['secret_name']}.yaml"
+                )
 
     for env, data in env_data.items():
         with open(
@@ -185,12 +199,33 @@ if __name__ == "__main__":
         ) as fp:
             yaml.dump(data, fp)
 
+        with open(
+            f"{project_path}/manifests/{env}/kustomization.yaml", "w"
+        ) as fp:
+            yaml.dump(kus_data[env], fp)
+
     print("Cleaning up...")
     exiles = [env for env in DESTINATIONS if env not in env_data.keys()]
     for exile in exiles:
-        deployment_path = f"{project_path}/manifests/{exile}/deployment.yaml"
+        deployment_path = os.path.join(
+            project_path,
+            "manifests",
+            exile,
+            "deployment.yaml",
+        )
         if os.path.exists(deployment_path):
             print(f"Removing {deployment_path}...")
             os.remove(deployment_path)
             print("Removed.")
+        kustomization_path = os.path.join(
+            project_path,
+            "manifests",
+            exile,
+            "kustomization.yaml",
+        )
+        if os.path.exists(kustomization_path):
+            print(f"Removing {kustomization_path}...")
+            os.remove(kustomization_path)
+            print("Removed.")
+
     print("Done.")
