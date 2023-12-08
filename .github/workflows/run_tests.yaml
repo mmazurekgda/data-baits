@@ -44,3 +44,14 @@ jobs:
         commit_author: Michał Mazurek <mmazurekgda@gmail.com>
         skip_fetch: true    
         skip_checkout: true
+    - name: Autocommit cluster manifests
+      uses: stefanzweifel/git-auto-commit-action@v5
+      # if: github.ref != 'refs/heads/main'
+      with:
+        commit_message: "Set up cluster manifests :space_invader:"
+        file_pattern: 'manifests/**/*.yaml'
+        commit_user_name: Michał Mazurek
+        commit_user_email: mmazurekgda@gmail.com
+        commit_author: Michał Mazurek <mmazurekgda@gmail.com>
+        skip_fetch: true    
+        skip_checkout: true
