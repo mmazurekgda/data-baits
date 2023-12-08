@@ -25,10 +25,14 @@ jobs:
         conda run -n data-baits-env pytest test
     - name: Set up data baits
       run: |
-        find generators/ -type f -name "*.py" -a -not -name "__init__.py" | while read file; do
+        generators=$(find generators/ -type f -name "*.py" -a -not -name "__init__.py")
+        for file in $generators; do
             echo "Setting up data bait on $file"
             conda run -n data-baits-env python $file
         done
+    - name: Create cluster manifests
+      run: |
+        conda run -n data-baits-env python scripts/create_manifests.py
     - name: Autocommit data baits
       uses: stefanzweifel/git-auto-commit-action@v5
       # if: github.ref != 'refs/heads/main'
