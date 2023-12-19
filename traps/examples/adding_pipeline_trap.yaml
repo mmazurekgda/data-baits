@@ -1,4 +1,4 @@
 name: \[Tutorial\] Adding a pipeline
-experiment_name: examples
-bait: "examples/adding.yaml"
+experiment: examples
+bait_file: "examples/adding.yaml"
 ignore: "false"

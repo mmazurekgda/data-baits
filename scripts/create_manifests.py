@@ -8,8 +8,8 @@ from collections import defaultdict
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_path)
 
-from core.traps import Trap  # noqa
-from core.defaults import DESTINATIONS  # noqa
+from data_traps_core.traps import Trap  # noqa
+from data_traps_core.defaults import ENVIRONMENTS  # noqa
 
 ignored_files = [
     "__init__.py",
@@ -39,19 +39,19 @@ def design_secret(
     env_info: dict,
     trap: Trap,
 ) -> None:
-    secret_name = f"{trap.experiment_name}-{trap.name}-secret"
+    secret_name = f"{trap.experiment}-{trap.name}-secret"
     if trap.ignore:
         print("Ignored! Checking if secrets exist...")
-        for destination in trap.destination:
-            sercret_file_path = os.path.join(
+        for environment in trap.environments:
+            secret_file_path = os.path.join(
                 project_path,
                 "manifests",
-                destination,
+                environment,
                 f"{secret_name}.yaml",
             )
-            if os.path.exists(sercret_file_path):
+            if os.path.exists(secret_file_path):
                 print(f"Secret {secret_name} already exists. Removing...")
-                os.remove(sercret_file_path)
+                os.remove(secret_file_path)
                 print("Removed.")
             else:
                 print(f"Secret {secret_name} does not exist. Skipping...")
@@ -59,7 +59,7 @@ def design_secret(
     bait_file_path = os.path.join(
         project_path,
         "baits",
-        trap.bait,
+        trap.bait_file,
     )
     bait_file_name = os.path.basename(bait_file_path)
     ex = run(
@@ -86,15 +86,14 @@ def design_secret(
         raise Exception(
             f"Failed to create secret {secret_name} for "
             f"trap {trap.name} in experiment "
-            f"{trap.experiment_name}. Details:"
+            f"{trap.experiment}. Details:"
             f"\n{ex.stderr}\n{ex.stdout}"
         )
-
-    for destination in trap.destination:
+    for environment in trap.environments:
         destination_path = os.path.join(
             project_path,
             "manifests",
-            destination,
+            environment,
         )
         if not os.path.exists(destination_path):
             os.makedirs(destination_path)
@@ -119,7 +118,7 @@ def design_secret(
             },
             "name": secret_name,
         }
-        env_info[destination].append(
+        env_info[environment].append(
             {
                 "container_info": container_info,
                 "volume_info": volume_info,
@@ -129,7 +128,7 @@ def design_secret(
 
 
 def create_pipeline_manifests() -> dict:
-    from core.traps import PipelineTrap
+    from data_traps_core.pipeline_trap import PipelineTrap
 
     env_info = defaultdict(list)
     print("Creating pipeline manifests...")
@@ -205,7 +204,7 @@ if __name__ == "__main__":
             yaml.dump(kus_data[env], fp)
 
     print("Cleaning up...")
-    exiles = [env for env in DESTINATIONS if env not in env_data.keys()]
+    exiles = [env for env in ENVIRONMENTS if env not in env_data.keys()]
     for exile in exiles:
         deployment_path = os.path.join(
             project_path,
