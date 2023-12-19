@@ -4,7 +4,7 @@ certifi==2023.11.17
 cfgv==3.4.0
 charset-normalizer==3.3.2
 click==8.1.7
-data-traps-core @ git+ssh://git@github.com/mmazurekgda/data-traps-core.git@9014e76c1352c37d7f435c1fb5899a3bfbd126da
+data-traps-core @ git+https://github.com/mmazurekgda/data-traps-core.git@9014e76c1352c37d7f435c1fb5899a3bfbd126da
 distlib==0.3.8
 docstring-parser==0.15
 filelock==3.13.1
