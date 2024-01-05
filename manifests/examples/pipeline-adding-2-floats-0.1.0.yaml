@@ -72,4 +72,4 @@ name: adding-2-floats
 parameters: null
 type: Pipeline
 type_check: true
-version: 0.1.7
+version: 0.1.0

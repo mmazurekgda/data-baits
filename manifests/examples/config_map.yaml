@@ -8,4 +8,4 @@ metadata:
     redeployable-1-namespace: data-baits
     redeployable-1-resource: job
 data:
-  sources: pipeline-adding-2-floats-0.1.7.yaml
+  sources: pipeline-adding-2-floats-0.1.0.yaml
