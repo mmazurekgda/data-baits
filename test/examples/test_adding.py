@@ -1,4 +1,4 @@
-from generators.examples.adding import add
+from examples.adding_2_floats import add
 
 
 def test_adding():

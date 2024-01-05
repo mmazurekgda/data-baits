@@ -1,0 +1,73 @@
+name: Run test & build image
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    permissions:
+        contents: write
+        packages: write
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+    - name: Add conda to system path
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        echo $CONDA/bin >> $GITHUB_PATH
+    - name: Install dependencies
+      run: |
+        conda create -n data-baits-env python=3.12
+        conda run -n data-baits-env pip install .
+    - name: Test with pytest
+      run: |
+        conda run -n data-baits-env pytest -vv test
+    - name: Generate examples
+      run: |
+        conda run -n data-baits-env python -m data_baits --verbosity DEBUG --environments examples generate --input_paths examples --output_path manifests
+    # - name: Set up data baits
+    #   run: |
+    #     generators=$(find generators/ -type f -name "*.py" -a -not -name "__init__.py")
+    #     for file in $generators; do
+    #         echo "Setting up a data bait on $file"
+    #         conda run -n data-baits-env python $file
+    #     done
+    # - name: Create cluster manifests
+    #   run: |
+    #     conda run -n data-baits-env python scripts/create_manifests.py
+    - name: Log in to the Container registry
+      uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
+    # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
+    # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
+    - name: Build and push Docker image
+      uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+    - name: Autocommit manifests
+      uses: stefanzweifel/git-auto-commit-action@v5
+      if: github.ref != 'refs/heads/main'
+      with:
+        commit_message: "Deploy manifests :space_invader:"
+        file_pattern: 'manifests/*'
+        commit_user_name: Michał Mazurek
+        commit_user_email: mmazurekgda@gmail.com
+        commit_author: Michał Mazurek <mmazurekgda@gmail.com>
+        skip_fetch: true    
+        skip_checkout: true

@@ -1,0 +1,22 @@
+# After any updates to this file, requirements.txt should be regenerated running
+# the following in this folder:
+# pip-compile --no-emit-index-url requirements.in
+
+click>=8.0.0
+# This is because the Kubeflow Pipelines with Kubernetes version 1.25 were
+# release with an alpha version, and this is badly supported when using a client of kfp
+# TODO: move to a stable release
+kfp @ git+https://github.com/mmazurekgda/pipelines.git@a213734ee571c65e9ce3ac992d9e9d584be3ed58#subdirectory=sdk/python
+# This is because the Kubeflow Pipelines with Kubernetes version 1.25 were
+# release with an alpha version, and this is badly supported when using a client of kfp
+# TODO: move to a stable release
+kfp-server-api @ git+https://github.com/mmazurekgda/pipelines.git@a213734ee571c65e9ce3ac992d9e9d584be3ed58#subdirectory=backend/api/python_http_client
+kubernetes>=17.0.0
+pydantic>=1.10.0
+PyYAML==5.3.1
+pytest
+pydantic_yaml
+ruamel.yaml>=0.17.40
+urllib3<2.0
+pyfiglet
+pre-commit
