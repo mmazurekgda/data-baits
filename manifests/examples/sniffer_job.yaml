@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sniffer
+  generateName: sniffer-
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - image: ghcr.io/mmazurekgda/data-baits:main
+        tty: true
+        imagePullPolicy: Always
+        name: sniffer
+        command:
+        - python
+        - -mdata_baits
+        - --verbosity
+        - DEBUG
+        - deploy
+        - --from_secret
+      volumes:
+      - name: volume-kf-pipeline-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: token
+              expirationSeconds: 7200
+              audience: pipelines.kubeflow.org
