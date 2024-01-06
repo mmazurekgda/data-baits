@@ -36,7 +36,7 @@ jobs:
         rm -rf manifests/examples
     - name: Generate examples
       run: |
-        conda run -n data-baits-env python -m data_baits --verbosity DEBUG --environments examples generate --input_paths examples --output_path manifests
+        conda run -n data-baits-env python -m data_baits --verbosity DEBUG generate --environments examples --input_paths examples --output_path manifests
     - name: Check if manifests can build
       run: |
         kustomize build manifests/examples

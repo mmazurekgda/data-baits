@@ -1,10 +1,17 @@
 K8_NAMESPACE: str = "github-cd"
 LOGGER_NAME = "DB"
-CONFIG_MAP_BASE = {
+NAMESPACE_BASE = {
     "apiVersion": "v1",
-    "kind": "ConfigMap",
+    "kind": "Namespace",
     "metadata": {
-        "name": "data-baits-sources",
+        "name": "",
+    },
+}
+SOURCES_SECRET_BASE = {
+    "apiVersion": "v1",
+    "kind": "Secret",
+    "metadata": {
+        "name": "",
         "labels": {
             "data-baits-source": "",
             "redeployable-1-name": "sniffer",
@@ -15,24 +22,26 @@ CONFIG_MAP_BASE = {
     "data": {
         "sources": "",
     },
+    "type": "Opaque",
 }
 KUSTOMIZATION_BASE = {
     "apiVersion": "kustomize.config.k8s.io/v1beta1",
     "kind": "Kustomization",
-    "resources": [
-        "config_map.yaml",
-    ],
+    "namespace": "data-baits",
+    "resources": [],
 }
 SNIFFER_JOB_BASE = {
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
         "name": "sniffer",
+        "generateName": "sniffer-",
     },
     "spec": {
         "backoffLimit": 0,
         "template": {
             "spec": {
+                "restartPolicy": "Never",
                 "containers": [
                     {
                         "image": "ghcr.io/mmazurekgda/data-baits:main",
@@ -41,7 +50,11 @@ SNIFFER_JOB_BASE = {
                         "name": "sniffer",
                         "command": [
                             "python",
-                            "/code/app/main.py",
+                            "-m" "data_baits",
+                            "--verbosity",
+                            "DEBUG",
+                            "deploy",
+                            "--from_secret",
                         ],
                     },
                 ],

@@ -20,7 +20,7 @@ def generate() -> List[Pipeline]:
             It is the simplest of examples on how to create a pipeline.
             It consists of just one component.
             """,
-            version="0.1.0",
+            version="0.1.9",
             environments=["examples"],
         ),
         # Trap(
