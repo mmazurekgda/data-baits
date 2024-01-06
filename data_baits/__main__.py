@@ -13,22 +13,11 @@ from data_baits.deploy import deploy
     help="verbosity of the logger",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
 )
-@click.option(
-    "--environments",
-    required=True,
-    help="Environments (clusters) to consider.",
-    type=str,
-    multiple=True,
-)
-@click.pass_context
-def cli(ctx, verbosity, environments):
+def cli(verbosity):
     setup_logger(
         verbosity,
         LOGGER_NAME,
     )
-    ctx.obj = {
-        "environments": list(set(environments)),
-    }
 
 
 cli.add_command(generate)

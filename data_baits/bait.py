@@ -21,33 +21,41 @@ class Bait(BaseModel):
     environments: List[str]
 
     @staticmethod
-    def yaml_to_bait(file_path: FilePath) -> "Bait":
-        with open(file_path, "r") as f:
-            content = f.read()
+    def _yaml_to_bait_core(content: str) -> "Bait":
         try:
             parsed = parse_yaml_raw_as(Bait, content)
         except ValidationError as e:
             if len(e.errors()) == 1:
                 error = e.errors()[0]
                 if not (
-                    error["type"] == "value_error.const"
-                    and error["loc"] == ("__root__", "type")
+                    error["type"] == "literal_error"
+                    and error["loc"] == ("type",)
                 ):
                     raise e
-                this_type = error["ctx"]["given"]
+                this_type = error["input"]
                 requested_bait = getattr(
-                    importlib.import_module("core.baits"), this_type
+                    importlib.import_module("data_baits.baits"), this_type
                 )
                 try:
                     parsed = parse_yaml_raw_as(requested_bait, content)
                 except ValidationError:
                     raise ValueError(
                         f"Failed to parse bait with type "
-                        f"'{error['input']}' from '{file_path}'."
+                        f"'{error['input']}'."
                     )
             else:
                 raise e
         return parsed
+
+    @staticmethod
+    def yaml_to_bait(file_path: FilePath) -> "Bait":
+        with open(file_path, "r") as f:
+            content = f.read()
+        return Bait._yaml_to_bait_core(content)
+
+    @staticmethod
+    def yaml_str_to_bait(content: str) -> "Bait":
+        return Bait._yaml_to_bait_core(content)
 
     @staticmethod
     def parse_k8_name(name: str) -> str:
@@ -75,6 +83,9 @@ class Bait(BaseModel):
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w") as f:
             f.write(to_yaml_str(self))
+
+    def dump_to_yaml_str(self) -> str:
+        return to_yaml_str(self)
 
     def id(self, use_version: bool = True) -> str:
         value = f"{self.type.lower()}-{self.name}"

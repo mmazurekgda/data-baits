@@ -8,11 +8,14 @@ import importlib.util
 import click
 from data_baits.defaults import (
     LOGGER_NAME,
-    CONFIG_MAP_BASE,
+    SOURCES_SECRET_BASE,
     KUSTOMIZATION_BASE,
+    NAMESPACE_BASE,
+    SNIFFER_JOB_BASE,
 )
 from data_baits.bait import Bait
 from pydantic import ValidationError
+import base64
 
 EnvBaits = Dict[str, List[Bait]]
 
@@ -118,16 +121,16 @@ def dump_bait_manifests(
 ) -> None:
     logger = logging.getLogger(LOGGER_NAME)
     for env, baits in env_baits.items():
-        sources = []
+        sources = {}
         env_path = os.path.join(path, env)
         if not os.path.exists(env_path):
             logger.debug(f"Creating directory '{env_path}'...")
             os.makedirs(env_path)
         logger.info(f"Dumping bait manifests to '{env_path}'...")
 
-        config_map = CONFIG_MAP_BASE.copy()
-        config_map["metadata"]["name"] = f"data-baits-source-{env}"
-        config_map["metadata"]["labels"]["data-baits-source"] = env
+        secret = SOURCES_SECRET_BASE.copy()
+        secret["metadata"]["name"] = f"data-baits-source-{env}"
+        secret["metadata"]["labels"]["data-baits-source"] = env
         for bait in baits:
             bait_manifest_name = f"{bait.id()}.yaml"
             destination = os.path.join(
@@ -141,17 +144,45 @@ def dump_bait_manifests(
                 destination,
                 create_path=True,
             )
-            sources.append(bait_manifest_name)
-        yaml = YAML()
-        with open(os.path.join(env_path, "config_map.yaml"), "w") as f:
+            with open(destination, "r") as f:
+                bait_manifest_str = bait.dump_to_yaml_str()
+                sources[bait_manifest_name] = base64.b64encode(
+                    bait_manifest_str.encode("utf-8")
+                ).decode("utf-8")
+        namespaces = ["data-baits"]
+        for bait in baits:
+            if getattr(bait, "namespace", None):
+                namespaces.append(bait.namespace)
+        for namespace in namespaces:
+            with open(
+                os.path.join(env_path, f"{namespace}-namespace.yaml"), "w"
+            ) as f:
+                logger.debug(
+                    f"-> Writing a namespace manifest to '{f.name}'..."
+                )
+                namespace_manifest = NAMESPACE_BASE.copy()
+                namespace_manifest["metadata"]["name"] = namespace
+                YAML().dump(namespace_manifest, f)
+        with open(os.path.join(env_path, "sources_secret.yaml"), "w") as f:
             logger.debug(f"-> Writing a config map manifest to '{f.name}'...")
-            config_map["data"]["sources"] = ";".join(sources)
-            yaml.dump(config_map, f)
+            secret["data"] = sources
+            YAML().dump(secret, f)
+        with open(os.path.join(env_path, "sniffer_job.yaml"), "w") as f:
+            logger.debug(f"-> Writing a job manifest to '{f.name}'...")
+            YAML().dump(SNIFFER_JOB_BASE, f)
         with open(os.path.join(env_path, "kustomization.yaml"), "w") as f:
             logger.debug(
                 f"-> Writing a kustomization manifest to '{f.name}'..."
             )
-            yaml.dump(KUSTOMIZATION_BASE, f)
+            kustomization = KUSTOMIZATION_BASE.copy()
+            kustomization["resources"] = [
+                "sources_secret.yaml",
+                "sniffer_job.yaml",
+            ]
+            kustomization["resources"] += [
+                f"{namespace}-namespace.yaml" for namespace in namespaces
+            ]
+            YAML().dump(kustomization, f)
     logger.info("Done.")
 
 
@@ -178,16 +209,23 @@ def dump_bait_manifests(
     help="Path where the compiled bait elements should be written.",
     type=click.Path(exists=True),
 )
-@click.pass_context
+@click.option(
+    "--environments",
+    required=True,
+    help="Environments (clusters) to consider.",
+    type=str,
+    multiple=True,
+)
 def generate(
-    ctx,
-    input_paths: str,
-    compile: bool,
-    output_path: str,
+    input_paths,
+    compile,
+    output_path,
+    environments,
 ):
     """Generates baits based on the generate() method."""
+    environments = list(set(environments))
     paths = list(set(input_paths))
-    env_baits = find_baits(paths, environments=ctx.obj["environments"])
+    env_baits = find_baits(paths, environments)
     if compile:
         compile_baits(env_baits)
     if output_path:

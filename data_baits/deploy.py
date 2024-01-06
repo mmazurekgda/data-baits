@@ -13,6 +13,7 @@ from packaging.version import Version
 from data_baits.session import get_istio_auth_session
 import tempfile
 from ruamel.yaml import YAML
+import base64
 
 
 def connect_to_pipeline_api(in_cluster, username, password, endpoint):
@@ -70,14 +71,21 @@ def deactivate_prompts(ctx, _, value):
 
 @click.command()
 @click.option(
+    "--from_secret",
+    help=(
+        "Use sources from the data-baits-sources "
+        "secret or from the path otherwise."
+    ),
+    default=False,
+    is_flag=True,
+)
+@click.option(
     "--path",
-    required=True,
     help="Path where the bait manifests are.",
     type=click.Path(exists=True),
 )
 @click.option(
     "--in_cluster",
-    default=True,
     help="whether to run in cluster",
     callback=deactivate_prompts,
     is_flag=True,
@@ -101,18 +109,12 @@ def deactivate_prompts(ctx, _, value):
     prompt=True,
     hide_input=True,
 )
-# @click.option(
-#     "--path",
-#     required=True,
-#     help=(
-#         "Path where python files with the generate() method are located."
-#         "Remember that the generate() method must return a list of "
-#         "Baits."
-#     ),
-#     type=click.Path(exists=True)
-# )
-def deploy(path, in_cluster, username, password, endpoint):
+def deploy(from_secret, path, in_cluster, username, password, endpoint):
     logger = logging.getLogger(LOGGER_NAME)
+    if not from_secret and not path:
+        raise ValueError(
+            "You must provide either --path or --from-secret argument!"
+        )
     logger.info("Starting the deployment of data baits...")
     deployment_time: datetime = None
     registry: client.V1ConfigMap = None
@@ -170,36 +172,52 @@ def deploy(path, in_cluster, username, password, endpoint):
     if not deployed_baits:
         logger.debug("-> No deployed baits so far!")
 
-    manifest_files = [
-        os.path.join(root, file)
-        for root, _, files in os.walk(path)
-        for file in files
-        if file.endswith(".yaml") or file.endswith(".yml")
-    ]
+    baits = []
+    if from_secret:
+        secrets = v1.list_secret_for_all_namespaces(
+            label_selector="data-baits-source"
+        )
+        for secret in secrets.items:
+            for encoded_bait in secret.data.values():
+                bait = base64.b64decode(encoded_bait.encode("utf-8")).decode(
+                    "utf-8"
+                )
+                bait = Bait.yaml_str_to_bait(bait)
+                baits.append(bait)
+    else:
+        manifest_files = [
+            os.path.join(root, file)
+            for root, _, files in os.walk(path)
+            for file in files
+            if file.endswith(".yaml") or file.endswith(".yml")
+        ]
+        for file in manifest_files:
+            with open(file, "r") as f:
+                baits.append(Bait.yaml_to_bait(f.name))
 
     logger.debug("-> Checking if there are new baits to deploy...")
     new_baits = []
-    for file in manifest_files:
-        with open(file, "r") as f:
-            bait = Bait.yaml_to_bait(f.name)
-            name = bait.id(use_version=False)
-            if name not in deployed_names:
-                logger.debug(
-                    f"--> Found a new bait: '{name}'"
-                    f" with version '{bait.version}'."
-                )
-                new_baits.append(bait)
-            elif bait.version > deployed_names[name]:
-                logger.debug(
-                    f"--> Found a newer version of bait: '{name}': "
-                    f"{bait.version} > {deployed_names[name]}."
-                )
-                new_baits.append(bait)
-            else:
-                logger.debug(
-                    f"--> Bait '{name}' with version "
-                    f"'{bait.version}' was previously deployed."
-                )
+    # sort baits by version to make sure that the oldest are deployed first
+    baits = sorted(baits, key=lambda b: b.version)
+    for bait in baits:
+        name = bait.id(use_version=False)
+        if name not in deployed_names:
+            logger.debug(
+                f"--> Found a new bait: '{name}'"
+                f" with version '{bait.version}'."
+            )
+            new_baits.append(bait)
+        elif bait.version > deployed_names[name]:
+            logger.debug(
+                f"--> Found a newer version of bait: '{name}': "
+                f"{bait.version} > {deployed_names[name]}."
+            )
+            new_baits.append(bait)
+        else:
+            logger.debug(
+                f"--> Bait '{name}' with version "
+                f"'{bait.version}' was previously deployed."
+            )
     if new_baits:
         logger.info("-> Found new baits to deploy!")
         # pipelines must be deployed first
