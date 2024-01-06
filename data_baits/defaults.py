@@ -34,8 +34,8 @@ SNIFFER_JOB_BASE = {
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "sniffer",
-        "generateName": "sniffer-",
+        "name": "",
+        "generateName": "",
     },
     "spec": {
         "backoffLimit": 0,
