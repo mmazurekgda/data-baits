@@ -127,10 +127,18 @@ def dump_bait_manifests(
             logger.debug(f"Creating directory '{env_path}'...")
             os.makedirs(env_path)
         logger.info(f"Dumping bait manifests to '{env_path}'...")
-
+        with open(os.path.join(env_path, "sniffer_job.yaml"), "w") as f:
+            logger.debug(f"-> Writing a job manifest to '{f.name}'...")
+            sniffer_job = SNIFFER_JOB_BASE.copy()
+            sniffer_job["metadata"]["name"] = f"sniffer-{env}"
+            sniffer_job["metadata"]["generateName"] = f"sniffer-{env}-"
+            YAML().dump(sniffer_job, f)
         secret = SOURCES_SECRET_BASE.copy()
         secret["metadata"]["name"] = f"data-baits-source-{env}"
         secret["metadata"]["labels"]["data-baits-source"] = env
+        secret["metadata"]["labels"]["redeployable-1-name"] = sniffer_job[
+            "metadata"
+        ]["name"]
         for bait in baits:
             bait_manifest_name = f"{bait.id()}.yaml"
             destination = os.path.join(
@@ -167,9 +175,6 @@ def dump_bait_manifests(
             logger.debug(f"-> Writing a config map manifest to '{f.name}'...")
             secret["data"] = sources
             YAML().dump(secret, f)
-        with open(os.path.join(env_path, "sniffer_job.yaml"), "w") as f:
-            logger.debug(f"-> Writing a job manifest to '{f.name}'...")
-            YAML().dump(SNIFFER_JOB_BASE, f)
         with open(os.path.join(env_path, "kustomization.yaml"), "w") as f:
             logger.debug(
                 f"-> Writing a kustomization manifest to '{f.name}'..."
