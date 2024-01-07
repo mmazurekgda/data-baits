@@ -19,6 +19,7 @@ spec:
         - --verbosity
         - DEBUG
         - deploy
+        - --in_cluster
         - --from_secret
       volumes:
       - name: volume-kf-pipeline-token
