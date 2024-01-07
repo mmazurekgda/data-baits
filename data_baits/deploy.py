@@ -14,6 +14,7 @@ from data_baits.session import get_istio_auth_session
 import tempfile
 from ruamel.yaml import YAML
 import base64
+from kfp_server_api.exceptions import ApiException
 
 
 def connect_to_pipeline_api(in_cluster, username, password, endpoint):
@@ -111,6 +112,7 @@ def deactivate_prompts(ctx, _, value):
 )
 def deploy(from_secret, path, in_cluster, username, password, endpoint):
     logger = logging.getLogger(LOGGER_NAME)
+    errors_no = 0
     if not from_secret and not path:
         raise ValueError(
             "You must provide either --path or --from-secret argument!"
@@ -235,36 +237,41 @@ def deploy(from_secret, path, in_cluster, username, password, endpoint):
         available_pipelines_names = [
             p.name for p in available_pipelines.pipelines
         ]
-
-        for pipeline in new_pipelines:
-            logger.info(
-                f"-> Deploying new pipeline '{pipeline.id()}'"
-                f" with version '{pipeline.version}'..."
-            )
-            with tempfile.NamedTemporaryFile(suffix=".yaml") as f:
-                yaml = YAML()
-                yaml.dump(pipeline.definition, f)
-                f.seek(0)
-                if pipeline.name not in available_pipelines_names:
-                    kfp_client.upload_pipeline(
+        try:
+            for pipeline in new_pipelines:
+                logger.info(
+                    f"-> Deploying new pipeline '{pipeline.id()}'"
+                    f" with version '{pipeline.version}'..."
+                )
+                with tempfile.NamedTemporaryFile(suffix=".yaml") as f:
+                    yaml = YAML()
+                    yaml.dump(pipeline.definition, f)
+                    f.seek(0)
+                    if pipeline.name not in available_pipelines_names:
+                        kfp_client.upload_pipeline(
+                            pipeline_package_path=f.name,
+                            pipeline_name=pipeline.name,
+                            description=pipeline.description,
+                        )
+                        available_pipelines_names.append(pipeline.name)
+                    kfp_client.upload_pipeline_version(
                         pipeline_package_path=f.name,
                         pipeline_name=pipeline.name,
+                        pipeline_version_name=str(pipeline.version),
                         description=pipeline.description,
                     )
-                    available_pipelines_names.append(pipeline.name)
-                kfp_client.upload_pipeline_version(
-                    pipeline_package_path=f.name,
-                    pipeline_name=pipeline.name,
-                    pipeline_version_name=str(pipeline.version),
-                    description=pipeline.description,
-                )
+                    deployed_baits[
+                        f"{pipeline.id(use_version=False)}_{pipeline.version}"
+                    ] = datetime.utcnow()
+        except ApiException as e:
+            logger.error(
+                f"Failed to deploy pipeline '{pipeline.id()}' "
+                f"with version '{pipeline.version}'. Will stop the deployment."
+                f"Details:\n{e}"
+            )
+            errors_no += 1
 
         logger.info("-> Updating the registry...")
-        for bait in new_baits:
-            deployed_baits[
-                f"{bait.id(use_version=False)}_{bait.version}"
-            ] = datetime.utcnow()
-
         v1.patch_namespaced_config_map(
             name="sniffer-registry",
             namespace="data-baits",
@@ -272,4 +279,10 @@ def deploy(from_secret, path, in_cluster, username, password, endpoint):
         )
     else:
         logger.info("-> No new baits to deploy!")
+    if errors_no > 0:
+        logger.error(
+            "Deployment finished with error(s). "
+            "Please check the logs for details."
+        )
+        exit(1)
     logger.info("Done!")
