@@ -54,6 +54,7 @@ SNIFFER_JOB_BASE = {
                             "--verbosity",
                             "DEBUG",
                             "deploy",
+                            "--in_cluster",
                             "--from_secret",
                         ],
                     },
