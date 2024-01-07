@@ -38,10 +38,10 @@ SNIFFER_JOB_BASE = {
         "generateName": "",
     },
     "spec": {
-        "backoffLimit": 0,
+        "backoffLimit": 10,
         "template": {
             "spec": {
-                "restartPolicy": "Never",
+                "restartPolicy": "OnFailure",
                 "containers": [
                     {
                         "image": "ghcr.io/mmazurekgda/data-baits:main",
