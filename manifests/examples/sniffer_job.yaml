@@ -15,7 +15,8 @@ spec:
         name: sniffer
         command:
         - python
-        - -mdata_baits
+        - -m
+        - data_baits
         - --verbosity
         - DEBUG
         - deploy
