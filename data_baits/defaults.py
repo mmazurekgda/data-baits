@@ -50,7 +50,8 @@ SNIFFER_JOB_BASE = {
                         "name": "sniffer",
                         "command": [
                             "python",
-                            "-m" "data_baits",
+                            "-m",
+                            "data_baits",
                             "--verbosity",
                             "DEBUG",
                             "deploy",
