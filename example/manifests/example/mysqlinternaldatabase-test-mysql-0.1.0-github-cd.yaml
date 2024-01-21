@@ -1,0 +1,13 @@
+environments:
+- example
+host_path: /mnt/mysqlinternaldatabase-test-mysql-github-cd
+mount_path: /var/lib/mysql
+name: test-mysql
+namespace: github-cd
+password_env_name: MYSQLINTERNALDATABASE_TEST_MYSQL_GITHUB_CD_PASSWORD
+port: 3306
+reclaim_policy: Retain
+storage: 10Gi
+storage_class: microk8s-hostpath
+type: MySQLInternalDatabase
+version: 0.1.0

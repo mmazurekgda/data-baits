@@ -1,6 +1,6 @@
 import click
 import pyfiglet as pf
-from data_baits.defaults import LOGGER_NAME
+from data_baits.core.settings import settings, Environments
 from data_baits.logger import setup_logger
 from data_baits.generate import generate
 from data_baits.deploy import deploy
@@ -13,11 +13,19 @@ from data_baits.deploy import deploy
     help="verbosity of the logger",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
 )
-def cli(verbosity):
+@click.option(
+    "--environment",
+    help="force environment of the application",
+    default=None,
+    type=click.Choice(Environments),
+)
+def cli(verbosity, environment):
     setup_logger(
         verbosity,
-        LOGGER_NAME,
+        settings.LOGGER_NAME,
     )
+    if environment:
+        settings.ENVIRONMENT = environment
 
 
 cli.add_command(generate)

@@ -1,5 +1,3 @@
-K8_NAMESPACE: str = "github-cd"
-LOGGER_NAME = "DB"
 NAMESPACE_BASE = {
     "apiVersion": "v1",
     "kind": "Namespace",

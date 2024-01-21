@@ -6,22 +6,24 @@ from data_baits.baits import Pipeline
 from collections import defaultdict
 import importlib.util
 import click
-from data_baits.defaults import (
-    LOGGER_NAME,
-    SOURCES_SECRET_BASE,
-    KUSTOMIZATION_BASE,
-    NAMESPACE_BASE,
+from data_baits.core.settings import settings
+from data_baits.core.templates import (
     SNIFFER_JOB_BASE,
+    SOURCES_SECRET_BASE,
+    NAMESPACE_BASE,
+    KUSTOMIZATION_BASE,
 )
 from data_baits.bait import Bait
 from pydantic import ValidationError
 import base64
+import string
+import random
 
 EnvBaits = Dict[str, List[Bait]]
 
 
 def compile_baits(env_baits: EnvBaits) -> None:
-    logger = logging.getLogger(LOGGER_NAME)
+    logger = logging.getLogger(settings.LOGGER_NAME)
     logger.info("Compiling baits...")
     for baits in env_baits.values():
         for bait in baits:
@@ -39,9 +41,9 @@ def compile_baits(env_baits: EnvBaits) -> None:
 
 def find_baits(
     paths: List[str],
-    environments: List[str],
+    destinations: List[str],
 ) -> EnvBaits:
-    logger = logging.getLogger(LOGGER_NAME)
+    logger = logging.getLogger(settings.LOGGER_NAME)
 
     all_files = []
     for path in paths:
@@ -76,18 +78,18 @@ def find_baits(
                 if not isinstance(bait, Bait):
                     raise ValueError(err_msg)
                 valid_envs = [
-                    env for env in bait.environments if env in environments
+                    env for env in bait.destinations if env in destinations
                 ]
                 if not valid_envs:
                     logger.warning(
                         f"--> Skipping {bait.type} with id: '{bait.id()}' "
                         "because it is not valid for any of the "
-                        f"environments: {environments}"
+                        f"destinations: {destinations}"
                     )
                     continue
                 logger.debug(
                     f"--> Found {bait.type} with id: '{bait.id()}' "
-                    f"for environments: {valid_envs}"
+                    f"for destinations: {valid_envs}"
                 )
                 if bait.id() in name_registry:
                     raise ValueError(
@@ -119,7 +121,7 @@ def dump_bait_manifests(
     env_baits: EnvBaits,
     path: str,
 ) -> None:
-    logger = logging.getLogger(LOGGER_NAME)
+    logger = logging.getLogger(settings.LOGGER_NAME)
     for env, baits in env_baits.items():
         sources = {}
         env_path = os.path.join(path, env)
@@ -130,8 +132,12 @@ def dump_bait_manifests(
         with open(os.path.join(env_path, "sniffer_job.yaml"), "w") as f:
             logger.debug(f"-> Writing a job manifest to '{f.name}'...")
             sniffer_job = SNIFFER_JOB_BASE.copy()
-            sniffer_job["metadata"]["name"] = f"sniffer-{env}"
-            sniffer_job["metadata"]["generateName"] = f"sniffer-{env}-"
+            letters = string.ascii_lowercase
+            uq_suffix = "".join(random.choice(letters) for i in range(4))
+            sniffer_job["metadata"]["name"] = f"sniffer-{env}-{uq_suffix}"
+            sniffer_job["metadata"][
+                "generateName"
+            ] = f"sniffer-{env}-{uq_suffix}-"
             YAML().dump(sniffer_job, f)
         secret = SOURCES_SECRET_BASE.copy()
         secret["metadata"]["name"] = f"data-baits-source-{env}"
@@ -160,7 +166,8 @@ def dump_bait_manifests(
         namespaces = ["data-baits"]
         for bait in baits:
             if getattr(bait, "namespace", None):
-                namespaces.append(bait.namespace)
+                if bait.namespace not in namespaces:
+                    namespaces.append(bait.namespace)
         for namespace in namespaces:
             with open(
                 os.path.join(env_path, f"{namespace}-namespace.yaml"), "w"
@@ -181,12 +188,13 @@ def dump_bait_manifests(
             )
             kustomization = KUSTOMIZATION_BASE.copy()
             kustomization["resources"] = [
+                f"{namespace}-namespace.yaml" for namespace in namespaces
+            ]
+            kustomization["resources"] += [
                 "sources_secret.yaml",
                 "sniffer_job.yaml",
             ]
-            kustomization["resources"] += [
-                f"{namespace}-namespace.yaml" for namespace in namespaces
-            ]
+
             YAML().dump(kustomization, f)
     logger.info("Done.")
 
@@ -215,7 +223,7 @@ def dump_bait_manifests(
     type=click.Path(exists=True),
 )
 @click.option(
-    "--environments",
+    "--destinations",
     required=True,
     help="Environments (clusters) to consider.",
     type=str,
@@ -225,12 +233,12 @@ def generate(
     input_paths,
     compile,
     output_path,
-    environments,
+    destinations,
 ):
     """Generates baits based on the generate() method."""
-    environments = list(set(environments))
+    destinations = list(set(destinations))
     paths = list(set(input_paths))
-    env_baits = find_baits(paths, environments)
+    env_baits = find_baits(paths, destinations)
     if compile:
         compile_baits(env_baits)
     if output_path:

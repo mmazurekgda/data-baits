@@ -67,7 +67,7 @@ description: "\n            This pipeline adds two floats.\n            It is th
   simplest of examples on how to create a pipeline.\n            It consists of just
   one component.\n            "
 environments:
-- examples
+- example
 name: adding-2-floats
 parameters: null
 type: Pipeline

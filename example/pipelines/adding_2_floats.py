@@ -21,11 +21,6 @@ def generate() -> List[Pipeline]:
             It consists of just one component.
             """,
             version="0.1.9",
-            environments=["examples"],
+            destinations=["example"],
         ),
-        # Trap(
-        #     name=pipeline_name,
-        #     bait=bait.id(),
-        #     experiment="examples",
-        # ),
     ]

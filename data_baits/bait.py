@@ -14,11 +14,100 @@ from packaging.version import Version
 import importlib
 
 
-class Bait(BaseModel):
+class BaitRegistry:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(BaitRegistry, cls).__new__(
+                cls, *args, **kwargs
+            )
+            cls._instance._registry = {}
+        return cls._instance
+
+    def get(self, name: str, version: str = None) -> dict[str, "Bait"]:
+        latest_bait = None
+        for bait in self._registry.values():
+            if bait.name == name:
+                if not version:
+                    if not latest_bait:
+                        latest_bait = bait
+                    elif bait.version > latest_bait.version:
+                        latest_bait = bait
+                else:
+                    if bait.version == version:
+                        return bait
+        return latest_bait
+
+    def set(self, bait: "Bait") -> None:
+        self._registry[bait.id()] = bait
+
+    def all(self) -> dict[str, dict[str, "Bait"]]:
+        return self._registry
+
+
+class GenericBait(BaseModel):
     name: str
-    type: Literal["Bait"] = "Bait"
+    type: Literal["GenericBait"] = "GenericBait"
     version: str = str(Version("0.1.0"))
-    environments: List[str]
+
+    def id(self, use_version: bool = True) -> str:
+        value = f"{self.type.lower()}-{self.name}"
+        if use_version:
+            value += f"-{self.version}"
+        return value
+
+    def __setattr__(self, name, value):
+        if name == "version":
+            if not isinstance(value, Version):
+                if not isinstance(value, str):
+                    value = str(value)
+                value = Version(value)
+            value = str(value)
+        return super().__setattr__(name, value)
+
+    def __getattribute__(self, __name) -> Any:
+        value = super().__getattribute__(__name)
+        if __name == "version":
+            value = Version(value)
+        return value
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.id() in BaitRegistry().all():
+            raise ValueError(f"Bait with id '{self.id()}' already exists.")
+        BaitRegistry().set(self)
+
+    @staticmethod
+    def get(name: str) -> "Bait":
+        return BaitRegistry().get(name)
+
+    @staticmethod
+    def parse_k8_name(name: str, hyphens: bool = True) -> str:
+        s = name.lower().strip()
+        s = re.sub(r"[^\w\s-]", "", s)
+        if hyphens:
+            s = re.sub(r"[\s_-]+", "-", s)
+        s = re.sub(r"^-+|-+$", "", s)
+        if not s:
+            raise ValueError("Invalid name: " f"'{name}'. ")
+        return s
+
+
+class LogicalBait(GenericBait):
+    type: Literal["LogicalBait"] = "LogicalBait"
+
+
+class PhysicalBait(GenericBait):
+    type: Literal["PhysicalBait"] = "PhysicalBait"
+    destinations: List[str]
+
+    def deploy(self, *_, **__) -> bool:
+        raise NotImplementedError
+
+    @staticmethod
+    def rollback(*_, **__) -> bool:
+        raise NotImplementedError
 
     @staticmethod
     def _yaml_to_bait_core(content: str) -> "Bait":
@@ -57,22 +146,12 @@ class Bait(BaseModel):
     def yaml_str_to_bait(content: str) -> "Bait":
         return Bait._yaml_to_bait_core(content)
 
-    @staticmethod
-    def parse_k8_name(name: str) -> str:
-        s = name.lower().strip()
-        s = re.sub(r"[^\w\s-]", "", s)
-        s = re.sub(r"[\s_-]+", "-", s)
-        s = re.sub(r"^-+|-+$", "", s)
-        if not s:
-            raise ValueError("Invalid Kubernetes name: " f"'{name}'. ")
-        return s
-
     @field_validator("name")
     def validate_k8_name(cls, v):
         return cls.parse_k8_name(v)
 
-    @field_validator("environments")
-    def validate_environments(cls, envs):
+    @field_validator("destinations")
+    def validate_destinations(cls, envs):
         assert len(envs) != 0, "Destination list cannot be empty"
         return [cls.parse_k8_name(env) for env in envs]
 
@@ -87,23 +166,7 @@ class Bait(BaseModel):
     def dump_to_yaml_str(self) -> str:
         return to_yaml_str(self)
 
-    def id(self, use_version: bool = True) -> str:
-        value = f"{self.type.lower()}-{self.name}"
-        if use_version:
-            value += f"-{self.version}"
-        return value
 
-    def __setattr__(self, name, value):
-        if name == "version":
-            if not isinstance(value, Version):
-                if not isinstance(value, str):
-                    value = str(value)
-                value = Version(value)
-            value = str(value)
-        return super().__setattr__(name, value)
-
-    def __getattribute__(self, __name) -> Any:
-        value = super().__getattribute__(__name)
-        if __name == "version":
-            value = Version(value)
-        return value
+# for backwards compatibility
+class Bait(PhysicalBait):
+    type: Literal["Bait"] = "Bait"
