@@ -6,7 +6,7 @@ from typing import Type, Dict
 from flask_login import UserMixin
 from flask_login import LoginManager
 from flask import Flask
-from typing import Callable
+from typing import Callable, Optional
 
 from data_baits.core.settings import settings, Environments
 from data_baits.dash.common.theme import THEME
@@ -28,7 +28,7 @@ this_file_dir = os.path.dirname(os.path.realpath(__file__))
 
 def create_dash_app(
     layouts: dict[str, dict],
-    user_class: Type[UserMixin],
+    user_class: Optional[Type[UserMixin]] = None,
     callbacks_generator: callable = lambda: None,
     name: str = settings.PROJECT_NAME,
     version: str = settings.PROJECT_VERSION,
@@ -57,12 +57,13 @@ def create_dash_app(
         raise ValueError("DASH_SECRET_KEY must be set in the environment")
     server.config.update(SECRET_KEY=settings.DASH_SECRET_KEY)
 
-    login_manager = LoginManager()
-    login_manager.init_app(server)
+    if user_class:
+        login_manager = LoginManager()
+        login_manager.init_app(server)
 
-    @login_manager.user_loader
-    def load_user(id):
-        return user_class(id)
+        @login_manager.user_loader
+        def load_user(id):
+            return user_class(id)
 
     app = dash.Dash(
         server_name,

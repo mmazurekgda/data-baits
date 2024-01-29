@@ -38,7 +38,6 @@ def generate_display_content_callback(core_layouts, layouts, **kwargs):
         navlink_outputs = [False, True] * grouped_args_no
         # enable navlinks if user is logged in and role is correct
         role = None
-        print(user)
         if user:
             role = user.get("role", None)
         # if role:
@@ -46,7 +45,6 @@ def generate_display_content_callback(core_layouts, layouts, **kwargs):
         #         if role in
         #         navlink_outputs[2 * index + 1] = False
         for layout in layouts.values():
-            print(role, layout["roles"])
             access_ok = role is not None and int(role) in layout["roles"]
             base_index = 2 * navlink_order[layout["link"]["id"]]
             if access_ok:
