@@ -7,7 +7,6 @@ from data_baits.baits.database import (
 )
 from data_baits.baits.data_model import (
     DataModel,
-    Model,
     DBRegistry,
 )
 
@@ -18,6 +17,5 @@ __all__ = [
     "MySQLInternalDatabase",
     "SQLiteDatabase",
     "DataModel",
-    "Model",
     "DBRegistry",
 ]

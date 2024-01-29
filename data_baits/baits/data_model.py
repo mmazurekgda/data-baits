@@ -40,10 +40,6 @@ class DBRegistry:
         return self._registry
 
 
-class Model:
-    pass
-
-
 class DataModel(LogicalBait):
     type: Literal["DataModel"] = "DataModel"
     name: str = ""

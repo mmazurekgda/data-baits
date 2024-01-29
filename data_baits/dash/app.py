@@ -1,134 +1,137 @@
 import dash
-from dash.dependencies import Input, Output
-from dash import dcc
-from dash import html
-from dash import callback
-import dash_bootstrap_components as dbc
-from data_baits.core.settings import settings
+from typing import Literal
+import os
+from dash import dcc, html
+from typing import Type, Dict
+from flask_login import UserMixin
+from flask_login import LoginManager
+from flask import Flask
+from typing import Callable
 
+from data_baits.core.settings import settings, Environments
+from data_baits.dash.common.theme import THEME
+from data_baits.dash.main_layout import (
+    create_default_main_layout,
+    create_default_main_navbar,
+    create_default_scaffolding,
+)
+from data_baits.dash.layouts.login import create_default_not_logged_in_layout
+from data_baits.dash.main_callback import (
+    create_default_main_callbacks,
+)
+from data_baits.dash.layouts.code_404 import (
+    create_default_404_layout,
+)
 
-def main_layout(
-    name: str,
-    layouts: dict[str, dict],
-):
-    navbar_items = [
-        dbc.NavItem(
-            dbc.NavLink(
-                layout_name,
-                href=layout["path"],
-            )
-        )
-        for layout_name, layout in layouts.items()
-    ]
-
-    # sidebar = dbc.Offcanvas(
-    #     children=[
-    #         html.H1(
-    #             name,
-    #             className="my-2",
-    #         ),
-    #         dbc.Nav(
-    #             navbar_items,
-    #             vertical=True,
-    #             pills=True,
-    #         ),
-
-    #     ],
-    #     # title=name,
-    #     scrollable=False,
-    #     is_open=True,
-    #     id="offcanvas",
-    #     className="bg-dark text-white",
-    #     backdrop=False,
-    #     close_button=False,
-    #     style={
-    #         "transform": "none",
-    #         "top": "56px",
-    #     },
-    # )
-    # sidebar = dbc.Navbar(
-    #     children=navbar_items,
-    #     # color="primary",
-    #     dark=True,
-    #     className="bg-dark",
-    #     vertical=True,
-    # )
-
-    navbar = dbc.NavbarSimple(
-        children=navbar_items,
-        brand=name,
-        brand_href="/",
-        # color="primary",
-        dark=True,
-        links_left=True,
-        sticky="top",
-        className="bg-dark",
-    )
-    scaffolding = dbc.Row(
-        [
-            dbc.Col(
-                children=[
-                    html.Div(
-                        id="page-content",
-                    ),
-                ],
-                md=12,
-                lg=6,
-            ),
-        ],
-        justify="center",
-    )
-    return html.Div(
-        [
-            dcc.Location(
-                id="url",
-                refresh=False,
-            ),
-            navbar,
-            # sidebar,
-            scaffolding,
-        ],
-        # className="bg-secondary",
-        style={
-            "height": "100vh",
-            "background-color": "#343a40",
-            # "data-bs-theme": "dark",
-        },
-    )
-
-
-def main_callback(layouts):
-    @callback(Output("page-content", "children"), Input("url", "pathname"))
-    def show_pages(pathname):
-        for layout in layouts.values():
-            if pathname == layout["path"]:
-                return layout["html"]
-        return "404"
-
-    return show_pages
+this_file_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 def create_dash_app(
     layouts: dict[str, dict],
+    user_class: Type[UserMixin],
     callbacks_generator: callable = lambda: None,
     name: str = settings.PROJECT_NAME,
-    main_layout: callable = main_layout,
-    main_callback: callable = main_callback,
-    main_dbc_theme: str = dbc.themes.BOOTSTRAP,
+    version: str = settings.PROJECT_VERSION,
+    environment: str = settings.ENVIRONMENT,
+    create_main_layout: callable = create_default_main_layout,
+    create_main_scaffolding: callable = create_default_scaffolding,
+    create_main_callback: callable = create_default_main_callbacks,
+    create_main_navbar: callable = create_default_main_navbar,
+    authenticate: Callable[[str, str], bool] = lambda **__: True,
+    get_role: Callable[[], int | None] = lambda: None,
+    main_dmc_theme: dict = THEME,
     suppress_callback_exceptions: bool = True,
+    color_scheme: Literal["light", "dark"] = "dark",
+    primary_color: str = "indigo",
+    avatar_options: Dict[str, str] = {
+        "src": "https://avatars.githubusercontent.com/u/37097697?v=4",
+        "size": "md",
+        "radius": "md",
+    },
+    external_stylesheets: list[str] = [],
+    server_name: str = __name__,
+    **add_kwargs,
 ) -> dash.Dash:
+    server = Flask(server_name)
+    if not settings.DASH_SECRET_KEY:
+        raise ValueError("DASH_SECRET_KEY must be set in the environment")
+    server.config.update(SECRET_KEY=settings.DASH_SECRET_KEY)
+
+    login_manager = LoginManager()
+    login_manager.init_app(server)
+
+    @login_manager.user_loader
+    def load_user(id):
+        return user_class(id)
+
     app = dash.Dash(
-        __name__,
-        external_stylesheets=[main_dbc_theme],
+        server_name,
+        server=server,
+        external_stylesheets=[
+            main_dmc_theme,
+            *external_stylesheets,
+            f"{this_file_dir}/assets/stylesheets.css",
+        ],
         suppress_callback_exceptions=suppress_callback_exceptions,
+        **add_kwargs,
     )
 
-    app.layout = main_layout(
-        name=name,
-        layouts=layouts,
+    # dmc.Stack(
+    #     spacing="xs",
+    #     children=[
+    #         dmc.Skeleton(height=50, circle=True),
+    #         dmc.Skeleton(height=8),
+    #         dmc.Skeleton(height=8),
+    #         dmc.Skeleton(height=8, width="70%"),
+    #     ],
+    # )
+
+    # load_figure_template(["darkly"])
+
+    version_dev = ""
+    if environment == Environments.dev.value:
+        version_dev = " DEV"
+
+    kwargs = {
+        "color_scheme": color_scheme,
+        "primary_color": primary_color,
+        "version_color": "dimmed",
+        "app_version_dev": version_dev,
+        "app_name": name,
+        "app_version": version,
+        "app_environment": environment,
+        "authenticate": authenticate,
+        "avatar_options": avatar_options,
+        "user_class": user_class,
+        "get_role": get_role,
+    }
+
+    core_layouts = {
+        "main_not_logged": {
+            "path": "/",
+            "html": create_default_not_logged_in_layout(**kwargs),
+        },
+        "404": {
+            "path": "/",
+            "html": create_default_404_layout(**kwargs),
+        },
+    }
+
+    app.layout = html.Div(
+        [
+            dcc.Location(id="url", refresh=False),
+            dcc.Store("user", storage_type="session"),
+            dcc.Store("color_theme", storage_type="session"),
+            create_main_layout(
+                layouts=layouts,
+                create_main_navbar=create_main_navbar,
+                create_main_scaffolding=create_main_scaffolding,
+                **kwargs,
+            ),
+        ]
     )
 
-    main_callback(layouts)
+    create_main_callback(core_layouts, layouts, **kwargs)
 
     callbacks_generator()
 

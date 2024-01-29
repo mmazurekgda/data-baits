@@ -1,11 +1,9 @@
 from example.databases import databases_with_names, engines
-from data_baits.baits import DataModel, Model
+from data_baits.baits import DataModel
 from typing import Union
 
-# from sqlmodel import SQLModel
 
-
-class EntityWithFloatBase(Model):
+class EntityWithFloatBase:
     name: str
     value: Union[float, None] = None
 

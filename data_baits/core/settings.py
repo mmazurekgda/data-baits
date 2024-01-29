@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from enum import Enum
 import os
+from data_baits import __version__
 
 
 class Environments(str, Enum):
@@ -17,7 +18,9 @@ class Settings(BaseSettings):
     )
 
     PROJECT_NAME: str = "data-baits"
-    ENVIRONMENT: Environments = Environments.prod
+    PROJECT_VERSION: str = __version__
+    DASH_SECRET_KEY: str = ""
+    ENVIRONMENT: Environments = Environments.dev.value
     K8_NAMESPACE: str = "github-cd"
     LOGGER_NAME: str = "DB"
     DEFAULT_STORAGE_CLASS: str = "microk8s-hostpath"
