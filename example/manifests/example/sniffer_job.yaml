@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: sniffer-examples
-  generateName: sniffer-examples-
+  name: sniffer-example-hong
+  generateName: sniffer-example-hong-
 spec:
   backoffLimit: 10
   template:

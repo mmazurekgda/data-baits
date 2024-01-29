@@ -6,19 +6,29 @@ from kubernetes import (
     client,
     config,
 )
-from data_baits.defaults import LOGGER_NAME
 import os
 from data_baits.bait import Bait
+from data_baits.baits import (
+    Pipeline,
+    Database,
+)
 from packaging.version import Version
 from data_baits.session import get_istio_auth_session
-import tempfile
-from ruamel.yaml import YAML
 import base64
-from kfp_server_api.exceptions import ApiException
+from data_baits.core.settings import settings
+
+
+CONFIG_MAP_BODY = {
+    "apiVersion": "v1",
+    "data": {},
+    "kind": "ConfigMap",
+    "metadata": {"name": "sniffer-registry"},
+    "type": "Opaque",
+}
 
 
 def connect_to_pipeline_api(in_cluster, username, password, endpoint):
-    logger = logging.getLogger(LOGGER_NAME)
+    logger = logging.getLogger(settings.LOGGER_NAME)
     logger.debug("-> Connecting to the kubeflow pipeline API...")
     if in_cluster:
         kfp_client = kfp.Client()
@@ -92,6 +102,11 @@ def deactivate_prompts(ctx, _, value):
     is_flag=True,
 )
 @click.option(
+    "--rollback",
+    help="rollbacks selected baits",
+    is_flag=True,
+)
+@click.option(
     "--username",
     help="Username to access the kfp client",
     required=False,
@@ -110,8 +125,10 @@ def deactivate_prompts(ctx, _, value):
     prompt=True,
     hide_input=True,
 )
-def deploy(from_secret, path, in_cluster, username, password, endpoint):
-    logger = logging.getLogger(LOGGER_NAME)
+def deploy(
+    from_secret, path, in_cluster, rollback, username, password, endpoint
+):
+    logger = logging.getLogger(settings.LOGGER_NAME)
     errors_no = 0
     if not from_secret and not path:
         raise ValueError(
@@ -146,17 +163,11 @@ def deploy(from_secret, path, in_cluster, username, password, endpoint):
         logger.debug("-> Registry secret not found!")
         logger.debug("-> Creating the registry secret...")
         deployment_time = datetime.utcnow()
+        body = CONFIG_MAP_BODY.copy()
+        body["data"]["first_deployment"] = deployment_time
         registry = v1.create_namespaced_config_map(
             namespace="data-baits",
-            body={
-                "apiVersion": "v1",
-                "data": {
-                    "first_deployment": deployment_time,
-                },
-                "kind": "ConfigMap",
-                "metadata": {"name": "sniffer-registry"},
-                "type": "Opaque",
-            },
+            body=body,
         )
     logger.info(f"-> Last sniffer deployment time: {deployment_time}")
     logger.debug("-> Getting the list of all deployed baits...")
@@ -197,6 +208,101 @@ def deploy(from_secret, path, in_cluster, username, password, endpoint):
             with open(file, "r") as f:
                 baits.append(Bait.yaml_to_bait(f.name))
 
+    if rollback:
+        baits = sorted(baits, key=lambda b: b.version)
+        for bait in baits:
+            name = bait.id(use_version=False)
+            if name in deployed_names:
+                if bait.version == deployed_names[name]:
+                    passed = True
+                    logger.info(
+                        f"-> Rolling back bait '{name}' "
+                        f"to version '{bait.version}'..."
+                    )
+                    if isinstance(bait, Pipeline):
+                        available_pipelines = kfp_client.list_pipelines(
+                            # this will hopefully suffice for now
+                            page_size=settings.LIST_PIPELINES_LIMIT,
+                        ).pipelines
+                        available_pipelines = [
+                            p
+                            for p in available_pipelines
+                            if p.name == bait.name
+                        ]
+                        if len(available_pipelines) > 1:
+                            logger.error(
+                                f"There are more than one pipeline with name "
+                                f"'{name}'. This should not happen."
+                            )
+                            passed = False
+                            continue
+                        if len(available_pipelines) == 0:
+                            logger.error(
+                                f"There are no pipelines with name "
+                                f"'{name}'. This should not happen."
+                            )
+                            passed = False
+                            continue
+                        versioned_pipelines = (
+                            kfp_client.list_pipeline_versions(
+                                pipeline_id=available_pipelines[0].id,
+                                page_size=settings.LIST_PIPELINES_LIMIT,
+                            ).versions
+                        )
+                        exact_pipelines = [
+                            p
+                            for p in versioned_pipelines
+                            if p.name == str(bait.version)
+                        ]
+                        if len(exact_pipelines) == 1:
+                            passed &= Pipeline.rollback(
+                                exact_pipelines[0].id,
+                                kfp_client,
+                                use_version=True,
+                            )
+                        if (
+                            len(versioned_pipelines) == 2
+                            and versioned_pipelines[0].name == bait.name
+                        ):
+                            passed &= Pipeline.rollback(
+                                versioned_pipelines[0].id,
+                                kfp_client,
+                                use_version=False,
+                            )
+                    elif issubclass(type(bait), Database):
+                        passed &= type(bait).rollback(
+                            bait.database_name(),
+                            namespace=bait.namespace,
+                        )
+                    errors_no += not passed
+                    if passed:
+                        deployed_baits.pop(
+                            f"{bait.id(use_version=False)}_{bait.version}"
+                        )
+            else:
+                logger.info(
+                    f"-> Bait '{name}' with version "
+                    f"'{bait.version}' was never deployed, skipping..."
+                )
+        logger.info("-> Updating the registry...")
+        print(deployed_baits)
+        v1.delete_namespaced_config_map(
+            name="sniffer-registry",
+            namespace="data-baits",
+        )
+        body = CONFIG_MAP_BODY.copy()
+        body["data"] = deployed_baits
+        v1.create_namespaced_config_map(
+            namespace="data-baits",
+            body=body,
+        )
+        if errors_no > 0:
+            logger.error(
+                "Deployment finished with error(s). "
+                "Please check the logs for details."
+            )
+        logger.info("Done!")
+        return
     logger.debug("-> Checking if there are new baits to deploy...")
     new_baits = []
     # sort baits by version to make sure that the oldest are deployed first
@@ -224,53 +330,57 @@ def deploy(from_secret, path, in_cluster, username, password, endpoint):
         logger.info("-> Found new baits to deploy!")
         # pipelines must be deployed first
         new_pipelines = []
+        new_databases = []
         for bait in new_baits:
-            if bait.type == "Pipeline":
+            if isinstance(bait, Pipeline):
                 new_pipelines.append(bait)
+            elif issubclass(type(bait), Database):
+                new_databases.append(bait)
             else:
-                raise ValueError(
+                logger.warning(
                     f"Found a bait of type '{bait.type}', "
                     "but its deployment is not supported yet."
                 )
 
-        available_pipelines = kfp_client.list_pipelines()
+        available_pipelines = kfp_client.list_pipelines(
+            # this will hopefully suffice for now
+            page_size=settings.LIST_PIPELINES_LIMIT,
+        )
+        if len(available_pipelines.pipelines) > settings.LIST_PIPELINES_LIMIT:
+            raise ValueError(
+                f"There are more than {settings.LIST_PIPELINES_LIMIT} "
+                "pipelines in the cluster, which must be increased."
+            )
         available_pipelines_names = [
             p.name for p in available_pipelines.pipelines
         ]
-        try:
-            for pipeline in new_pipelines:
-                logger.info(
-                    f"-> Deploying new pipeline '{pipeline.id()}'"
-                    f" with version '{pipeline.version}'..."
-                )
-                with tempfile.NamedTemporaryFile(suffix=".yaml") as f:
-                    yaml = YAML()
-                    yaml.dump(pipeline.definition, f)
-                    f.seek(0)
-                    if pipeline.name not in available_pipelines_names:
-                        kfp_client.upload_pipeline(
-                            pipeline_package_path=f.name,
-                            pipeline_name=pipeline.name,
-                            description=pipeline.description,
-                        )
-                        available_pipelines_names.append(pipeline.name)
-                    kfp_client.upload_pipeline_version(
-                        pipeline_package_path=f.name,
-                        pipeline_name=pipeline.name,
-                        pipeline_version_name=str(pipeline.version),
-                        description=pipeline.description,
-                    )
-                    deployed_baits[
-                        f"{pipeline.id(use_version=False)}_{pipeline.version}"
-                    ] = datetime.utcnow()
-        except ApiException as e:
-            logger.error(
-                f"Failed to deploy pipeline '{pipeline.id()}' "
-                f"with version '{pipeline.version}'. Will stop the deployment."
-                f"Details:\n{e}"
+        for pipeline in new_pipelines:
+            logger.info(
+                f"-> Deploying new pipeline '{pipeline.id()}'"
+                f" with version '{pipeline.version}'..."
             )
-            errors_no += 1
-
+            passed = True
+            if pipeline.name not in available_pipelines_names:
+                passed = pipeline.deploy(kfp_client, use_version=False)
+                available_pipelines_names.append(pipeline.name)
+            if passed:
+                passed = pipeline.deploy(kfp_client, use_version=True)
+            errors_no += not passed
+            if passed:
+                deployed_baits[
+                    f"{pipeline.id(use_version=False)}_{pipeline.version}"
+                ] = datetime.utcnow()
+        for database in new_databases:
+            logger.info(
+                f"-> Deploying new database '{database.id()}'"
+                f" with version '{database.version}'..."
+            )
+            passed = database.deploy()
+            errors_no += not passed
+            if passed:
+                deployed_baits[
+                    f"{database.id(use_version=False)}_{database.version}"
+                ] = datetime.utcnow()
         logger.info("-> Updating the registry...")
         v1.patch_namespaced_config_map(
             name="sniffer-registry",

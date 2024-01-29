@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Dosis&display=swap');
+
+/* hide on small screens */
+@media only screen and (max-width: 768px) {
+  .hidden-below-sm {
+      display: none !important;
+  }
+}
+@media only screen and (min-width: 768px) {
+  .hidden-above-sm {
+      display: none !important;
+  }
+}
+
+.text-color-scheme {
+  color: var(--text-color);
+}
+
+
+/* ._dash-loading {
+    margin: auto;
+    color: transparent;
+    width: 100vw;
+    height: 100vh;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: fit-content;
+    font-size: 17px;
+    font-family: monospace;
+    line-height: 1.4;
+    font-weight: bold;
+    --c: no-repeat linear-gradient(#000 0 0); 
+    background: var(--c),var(--c),var(--c),var(--c),var(--c),var(--c),var(--c);
+    background-size: calc(1ch + 1px) 100%;
+    border-bottom: 10px solid #0000; 
+    position: relative;
+    animation: l8-0 3s infinite linear;
+    clip-path: inset(-20px 0);
+} */
+
+/* ._dash-loading::before {
+content:"Loading";
+}
+
+._dash-loading::after {
+content: "";
+position: absolute;
+width: 10px;
+height: 14px;
+background: #25adda;
+left: -10px;
+bottom: 100%;
+animation: l8-1 3s infinite linear;
+} */
+
+/* 
+  @keyframes l8-0{
+     0%,
+     12.5% {background-position: calc(0*100%/6) 0   ,calc(1*100%/6)    0,calc(2*100%/6)    0,calc(3*100%/6)    0,calc(4*100%/6)    0,calc(5*100%/6)    0,calc(6*100%/6) 0}
+     25%   {background-position: calc(0*100%/6) 40px,calc(1*100%/6)    0,calc(2*100%/6)    0,calc(3*100%/6)    0,calc(4*100%/6)    0,calc(5*100%/6)    0,calc(6*100%/6) 0}
+     37.5% {background-position: calc(0*100%/6) 40px,calc(1*100%/6) 40px,calc(2*100%/6)    0,calc(3*100%/6)    0,calc(4*100%/6)    0,calc(5*100%/6)    0,calc(6*100%/6) 0}
+     50%   {background-position: calc(0*100%/6) 40px,calc(1*100%/6) 40px,calc(2*100%/6) 40px,calc(3*100%/6)    0,calc(4*100%/6)    0,calc(5*100%/6)    0,calc(6*100%/6) 0}
+     62.5% {background-position: calc(0*100%/6) 40px,calc(1*100%/6) 40px,calc(2*100%/6) 40px,calc(3*100%/6) 40px,calc(4*100%/6)    0,calc(5*100%/6)    0,calc(6*100%/6) 0}
+     75%   {background-position: calc(0*100%/6) 40px,calc(1*100%/6) 40px,calc(2*100%/6) 40px,calc(3*100%/6) 40px,calc(4*100%/6) 40px,calc(5*100%/6)    0,calc(6*100%/6) 0}
+     87.4% {background-position: calc(0*100%/6) 40px,calc(1*100%/6) 40px,calc(2*100%/6) 40px,calc(3*100%/6) 40px,calc(4*100%/6) 40px,calc(5*100%/6) 40px,calc(6*100%/6) 0}
+     100%  {background-position: calc(0*100%/6) 40px,calc(1*100%/6) 40px,calc(2*100%/6) 40px,calc(3*100%/6) 40px,calc(4*100%/6) 40px,calc(5*100%/6) 40px,calc(6*100%/6) 40px}
+  }
+  @keyframes l8-1{
+    100% {left:115%}
+  } */

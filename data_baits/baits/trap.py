@@ -1,4 +1,4 @@
-from data_baits.defaults import K8_NAMESPACE
+from data_baits.core.settings import settings
 from data_baits.bait import Bait
 from pydantic import field_validator
 from typing_extensions import Literal
@@ -8,7 +8,7 @@ class Trap(Bait):
     type: Literal["Trap"] = "Trap"
     bait: str
     experiment: str
-    namespace: str = K8_NAMESPACE
+    namespace: str = settings.K8_NAMESPACE
     ignore: bool = False
 
     def id(self, *args, **kwargs) -> str:

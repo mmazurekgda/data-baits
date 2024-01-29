@@ -1,0 +1,160 @@
+from dash import dcc
+from dash_iconify import DashIconify
+import dash_mantine_components as dmc
+
+
+def create_default_header(**kwargs) -> dmc.Header:
+    avatar_box = dmc.Grid(
+        children=[
+            dmc.Col(
+                children=[
+                    dcc.Link(
+                        dmc.Avatar(**kwargs["avatar_options"]),
+                        href="/",
+                        refresh=False,
+                    ),
+                    dmc.Text(
+                        children=kwargs["app_name"],
+                        size=35,
+                        weight=700,
+                        # inherit=True,
+                        variant="gradient",
+                        style={
+                            "color": "dark",
+                            "padding-left": "10px",
+                            "padding-top": "2px",
+                        },
+                        className="hidden-below-sm",
+                    ),
+                    dmc.Text(
+                        children=f"v{kwargs['app_version']}",
+                        size=15,
+                        weight=1000,
+                        # inherit=True,
+                        variant="text",
+                        style={
+                            "color": "dark",
+                            "vertical-align": "bottom",
+                            "padding-top": "17px",
+                        },
+                        className="hidden-below-sm",
+                    ),
+                    dmc.Text(
+                        children=kwargs["app_version_dev"],
+                        size=10,
+                        weight=1000,
+                        # inherit=True,
+                        variant="text",
+                        style={
+                            "color": "red",
+                            "vertical-align": "bottom",
+                            "padding-top": "0px",
+                        },
+                        className="hidden-below-sm",
+                    ),
+                    dmc.Button(
+                        DashIconify(
+                            icon="radix-icons:text-align-justify",
+                            height=30,
+                        ),
+                        id="left-navbar-toggler",
+                        style={
+                            "padding": "5px",
+                            "margin-left": "15px",
+                        },
+                        variant="outline",
+                        className="hidden-above-sm",
+                        n_clicks=0,
+                    ),
+                ],
+                span="content",
+                style={
+                    "display": "flex",
+                    "justify-content": "center",
+                    "alignItems": "center",
+                },
+            ),
+            dmc.Col(
+                children=[
+                    dmc.Group(
+                        [
+                            dmc.Switch(
+                                id="color-scheme-switch",
+                                size="md",
+                                radius="lg",
+                                checked=(kwargs["color_scheme"] == "dark"),
+                                onLabel=DashIconify(
+                                    icon="ic:round-dark-mode",
+                                    height=15,
+                                ),
+                                offLabel=DashIconify(
+                                    icon="ic:round-light-mode",
+                                    height=15,
+                                ),
+                                disabled=True,
+                            ),
+                            dmc.Button(
+                                "Log in",
+                                leftIcon=DashIconify(icon="mdi:login"),
+                                id="log-in-button-from-header",
+                                variant="subtle",
+                                # fullWidth=True,
+                                size="sm",
+                                n_clicks=0,
+                                style={
+                                    "margin-right": "15px",
+                                    "display": "block",
+                                },
+                            ),
+                            dmc.Button(
+                                "Log out",
+                                leftIcon=DashIconify(icon="mdi:logout"),
+                                id="log-out-button-from-header",
+                                # loading=True,
+                                variant="subtle",
+                                # fullWidth=True,
+                                size="sm",
+                                n_clicks=0,
+                                style={
+                                    "margin-right": "15px",
+                                    "display": "none",
+                                },
+                            ),
+                        ],
+                        position="center",
+                    )
+                ],
+                span="content",
+                style={
+                    "display": "flex",
+                    "alignItems": "center",
+                    "justifyContent": "flex-end",
+                },
+                # className="hidden-above-sm",
+            ),
+        ],
+        justify="space-between",
+        gutter="sm",
+        align="center",
+        style={
+            # "width": "300px",
+            "height": "80px",
+            "padding-left": "15px",
+            "mx": "auto",
+            "margin-bottom": "-20px",
+        },
+    )
+    return dmc.Header(
+        children=[
+            avatar_box,
+        ],
+        height=80,
+        withBorder=True,
+        # fixed=True,
+        style={
+            # "display": "flex",
+            # "justifyContent": "space-between",
+            # "ml": "auto",
+            # "alignItems": "center",
+        },
+    )

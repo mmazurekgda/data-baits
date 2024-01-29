@@ -1,0 +1,6 @@
+environments:
+- example
+name: test-sqlite
+namespace: github-cd
+type: SQLiteDatabase
+version: 0.1.0
