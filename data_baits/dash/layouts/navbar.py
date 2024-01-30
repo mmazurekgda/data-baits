@@ -1,4 +1,5 @@
 import dash_mantine_components as dmc
+from dash import html
 
 
 def create_default_main_navbar(
@@ -14,7 +15,15 @@ def create_default_main_navbar(
         width={
             "sm": 300,
         },
-        children=[],
+        children=[
+            html.H3(
+                "Log in to see the menu!",
+                id="left-navbar-header",
+                style={
+                    "text-align": "center",
+                },
+            ),
+        ],
         withBorder=True,
         className="hidden-below-sm",
         style={
