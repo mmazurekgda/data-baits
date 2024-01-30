@@ -44,7 +44,7 @@ class DataModel(LogicalBait):
     type: Literal["DataModel"] = "DataModel"
     name: str = ""
     table_name: str = ""
-    database: str  # Field(str, allow_mutation=False)
+    database: str
     model: Type | None = None
 
     # SQLModel

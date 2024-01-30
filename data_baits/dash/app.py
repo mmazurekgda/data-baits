@@ -6,7 +6,7 @@ from typing import Type, Dict
 from flask_login import UserMixin
 from flask_login import LoginManager
 from flask import Flask
-from typing import Callable, Optional
+from typing import Callable
 
 from data_baits.core.settings import settings, Environments
 from data_baits.dash.common.theme import THEME
@@ -26,9 +26,14 @@ from data_baits.dash.layouts.code_404 import (
 this_file_dir = os.path.dirname(os.path.realpath(__file__))
 
 
+class UserSession(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+
 def create_dash_app(
     layouts: dict[str, dict],
-    user_class: Optional[Type[UserMixin]] = None,
+    user_class: Type[UserMixin] = UserSession,
     callbacks_generator: callable = lambda: None,
     name: str = settings.PROJECT_NAME,
     version: str = settings.PROJECT_VERSION,
@@ -37,7 +42,7 @@ def create_dash_app(
     create_main_scaffolding: callable = create_default_scaffolding,
     create_main_callback: callable = create_default_main_callbacks,
     create_main_navbar: callable = create_default_main_navbar,
-    authenticate: Callable[[str, str], bool] = lambda **__: True,
+    authenticate: Callable[[str, str], int | None] = lambda **__: None,
     get_role: Callable[[], int | None] = lambda: None,
     main_dmc_theme: dict = THEME,
     suppress_callback_exceptions: bool = True,
@@ -57,13 +62,15 @@ def create_dash_app(
         raise ValueError("DASH_SECRET_KEY must be set in the environment")
     server.config.update(SECRET_KEY=settings.DASH_SECRET_KEY)
 
-    if user_class:
-        login_manager = LoginManager()
-        login_manager.init_app(server)
+    if not user_class:
+        raise ValueError("user_class must be set")
 
-        @login_manager.user_loader
-        def load_user(id):
-            return user_class(id)
+    login_manager = LoginManager()
+    login_manager.init_app(server)
+
+    @login_manager.user_loader
+    def load_user(id):
+        return user_class(id)
 
     app = dash.Dash(
         server_name,

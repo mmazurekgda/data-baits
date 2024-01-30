@@ -1,6 +1,8 @@
 from typing import Literal
 from dash.dependencies import Input, Output, State
+from flask_login import current_user
 from dash import callback
+from enum import Flag
 
 
 def generate_display_content_callback(core_layouts, layouts, **kwargs):
@@ -12,43 +14,49 @@ def generate_display_content_callback(core_layouts, layouts, **kwargs):
             if "id" in layout["link"]:
                 if action == "Output":
                     actions.append(Output(layout["link"]["id"], "active"))
-                    actions.append(Output(layout["link"]["id"], "disabled"))
+                    actions.append(Output(layout["link"]["id"], "style"))
                 elif action == "State":
                     actions.append(State(layout["link"]["id"], "active"))
-                    actions.append(State(layout["link"]["id"], "disabled"))
+                    actions.append(State(layout["link"]["id"], "style"))
                     navlink_order[layout["link"]["id"]] = index
         return actions
 
     @callback(
         Output("page-content", "children"),
         Output("failed-login-alert", "hide"),
+        Output("left-navbar-header", "style"),
         *create_navlink_actions("Output"),
         Input("url", "pathname"),
         State("page-content", "children"),
-        State("user", "data"),
         State("failed-login-alert", "hide"),
+        State("left-navbar-header", "style"),
         *create_navlink_actions("State"),
         prevent_initial_call=True,
     )
     def display_content(
-        pathname, page_content, user, failed_login_alert_hidden, *navlink_args
+        pathname,
+        page_content,
+        failed_login_alert_hidden,
+        navbar_header_style,
+        *navlink_args,
     ):
         is_core = True
         grouped_args_no = len(navlink_args) // 2
-        navlink_outputs = [False, True] * grouped_args_no
+        visible = {"display": "flex"}
+        invisible = {"display": "none"}
+        navlink_outputs = [False, invisible] * grouped_args_no
         # enable navlinks if user is logged in and role is correct
-        role = None
-        if user:
-            role = user.get("role", None)
-        # if role:
-        #     for index in range(grouped_args_no):
-        #         if role in
-        #         navlink_outputs[2 * index + 1] = False
+        role: Flag | None = None
+        if current_user.is_authenticated:
+            role = kwargs["get_role"]()
+            navbar_header_style.update(invisible)
+        else:
+            navbar_header_style.update(visible)
         for layout in layouts.values():
-            access_ok = role is not None and int(role) in layout["roles"]
+            access_ok = role is not None and role & layout["role"]
             base_index = 2 * navlink_order[layout["link"]["id"]]
             if access_ok:
-                navlink_outputs[base_index + 1] = False
+                navlink_outputs[base_index + 1] = visible
             if pathname == layout["link"]["href"]:
                 if access_ok:
                     page_content = layout["html"]
@@ -64,7 +72,12 @@ def generate_display_content_callback(core_layouts, layouts, **kwargs):
                 page_content = core_layouts["main_not_logged"]["html"]
             else:
                 page_content = core_layouts["404"]["html"]
-        return page_content, failed_login_alert_hidden, *navlink_outputs
+        return (
+            page_content,
+            failed_login_alert_hidden,
+            navbar_header_style,
+            *navlink_outputs,
+        )
 
     return display_content
 
