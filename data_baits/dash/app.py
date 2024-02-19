@@ -1,5 +1,5 @@
 import dash
-from typing import Literal
+from typing import Literal, Any, List
 import os
 from dash import dcc, html
 from typing import Type, Dict
@@ -42,7 +42,7 @@ def create_dash_app(
     create_main_scaffolding: callable = create_default_scaffolding,
     create_main_callback: callable = create_default_main_callbacks,
     create_main_navbar: callable = create_default_main_navbar,
-    authenticate: Callable[[str, str], int | None] = lambda **__: None,
+    authenticate: Callable[[str, str], Any | None] = lambda **__: None,
     get_role: Callable[[], int | None] = lambda: None,
     main_dmc_theme: dict = THEME,
     suppress_callback_exceptions: bool = True,
@@ -53,7 +53,8 @@ def create_dash_app(
         "size": "md",
         "radius": "md",
     },
-    external_stylesheets: list[str] = [],
+    external_stylesheets: List[str] = [],
+    external_scripts: List[str] = [],
     server_name: str = __name__,
     **add_kwargs,
 ) -> dash.Dash:
@@ -77,9 +78,10 @@ def create_dash_app(
         server=server,
         external_stylesheets=[
             main_dmc_theme,
-            *external_stylesheets,
             f"{this_file_dir}/assets/stylesheets.css",
+            *external_stylesheets,
         ],
+        external_scripts=external_scripts,
         suppress_callback_exceptions=suppress_callback_exceptions,
         **add_kwargs,
     )

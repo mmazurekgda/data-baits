@@ -24,7 +24,7 @@ def create_default_404_layout(**kwargs) -> html.Div:
             shadow="lg",
             withBorder=True,
             style={
-                "background-color": "dimmed",
+                "backgroundColor": "dimmed",
             },
         )
     )

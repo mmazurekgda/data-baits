@@ -21,8 +21,8 @@ def create_default_header(**kwargs) -> dmc.Header:
                         variant="gradient",
                         style={
                             "color": "dark",
-                            "padding-left": "10px",
-                            "padding-top": "2px",
+                            "paddingLeft": "10px",
+                            "paddingTop": "2px",
                         },
                         className="hidden-below-sm",
                     ),
@@ -34,8 +34,8 @@ def create_default_header(**kwargs) -> dmc.Header:
                         variant="text",
                         style={
                             "color": "dark",
-                            "vertical-align": "bottom",
-                            "padding-top": "17px",
+                            "verticalAlign": "bottom",
+                            "paddingTop": "17px",
                         },
                         className="hidden-below-sm",
                     ),
@@ -47,8 +47,8 @@ def create_default_header(**kwargs) -> dmc.Header:
                         variant="text",
                         style={
                             "color": "red",
-                            "vertical-align": "bottom",
-                            "padding-top": "0px",
+                            "verticalAlign": "bottom",
+                            "paddingTop": "0px",
                         },
                         className="hidden-below-sm",
                     ),
@@ -60,7 +60,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                         id="left-navbar-toggler",
                         style={
                             "padding": "5px",
-                            "margin-left": "15px",
+                            "marginLeft": "15px",
                         },
                         variant="outline",
                         className="hidden-above-sm",
@@ -70,7 +70,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                 span="content",
                 style={
                     "display": "flex",
-                    "justify-content": "center",
+                    "justifyContent": "center",
                     "alignItems": "center",
                 },
             ),
@@ -102,7 +102,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                                 size="sm",
                                 n_clicks=0,
                                 style={
-                                    "margin-right": "15px",
+                                    "marginRight": "15px",
                                     "display": "block",
                                 },
                             ),
@@ -116,7 +116,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                                 size="sm",
                                 n_clicks=0,
                                 style={
-                                    "margin-right": "15px",
+                                    "marginRight": "15px",
                                     "display": "none",
                                 },
                             ),
@@ -139,9 +139,9 @@ def create_default_header(**kwargs) -> dmc.Header:
         style={
             # "width": "300px",
             "height": "80px",
-            "padding-left": "15px",
+            "paddingLeft": "15px",
             "mx": "auto",
-            "margin-bottom": "-20px",
+            "marginBottom": "-20px",
         },
     )
     return dmc.Header(
