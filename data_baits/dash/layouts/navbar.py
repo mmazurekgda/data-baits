@@ -20,14 +20,14 @@ def create_default_main_navbar(
                 "Log in to see the menu!",
                 id="left-navbar-header",
                 style={
-                    "text-align": "center",
+                    "textAlign": "center",
                 },
             ),
         ],
         withBorder=True,
         className="hidden-below-sm",
         style={
-            "background-color": "dimmed",
+            "backgroundColor": "dimmed",
         },
     )
     for layout_opts in layouts.values():

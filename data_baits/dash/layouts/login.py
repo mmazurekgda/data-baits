@@ -89,7 +89,7 @@ def create_default_not_logged_in_layout(**kwargs) -> html.Div:
                             style={
                                 "width": "30%",
                                 "height": "auto",
-                                "text-align": "center",
+                                "textAlign": "center",
                             },
                         ),
                     ],
@@ -125,7 +125,7 @@ def create_default_not_logged_in_layout(**kwargs) -> html.Div:
             shadow="lg",
             withBorder=True,
             style={
-                "background-color": "dimmed",
+                "backgroundColor": "dimmed",
             },
         )
     )
