@@ -1,6 +1,7 @@
 from dash import html
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
+from flask_login import current_user
 
 
 def create_login_modal(**kwargs) -> dmc.Modal:
@@ -56,72 +57,78 @@ def create_login_modal(**kwargs) -> dmc.Modal:
 
 
 def create_default_not_logged_in_layout(**kwargs) -> html.Div:
-    return html.Div(
-        dmc.Card(
-            children=[
-                dmc.Group(
-                    [
-                        dmc.Text(
-                            children="Welcome to the",
-                            size=60,
-                            weight=800,
-                            variant="text",
-                        ),
-                        dmc.Text(
-                            children=kwargs["app_name"],
-                            size=60,
-                            weight=800,
-                            variant="gradient",
-                        ),
-                        dmc.Text(
-                            children="project!",
-                            size=60,
-                            weight=800,
-                            variant="text",
-                        ),
-                    ],
-                    position="center",
+    children = [
+        dmc.Group(
+            [
+                dmc.Text(
+                    children="Welcome to the",
+                    size=60,
+                    weight=800,
+                    variant="text",
                 ),
-                dmc.Group(
-                    [
-                        html.Img(
-                            src=kwargs["avatar_options"]["src"],
-                            style={
-                                "width": "30%",
-                                "height": "auto",
-                                "textAlign": "center",
-                            },
-                        ),
-                    ],
-                    position="center",
+                dmc.Text(
+                    children=kwargs["app_name"],
+                    size=60,
+                    weight=800,
+                    variant="gradient",
                 ),
-                dmc.Group(
-                    [
-                        dmc.Text(
-                            children="Log in to access the app.",
-                            size=40,
-                        ),
-                    ],
-                    position="center",
-                ),
-                html.Br(),
-                html.Br(),
-                html.Br(),
-                dmc.Group(
-                    [
-                        dmc.Button(
-                            "Log in",
-                            id="log-in-button-from-card",
-                            # loading=True,
-                            variant="gradient",
-                            # fullWidth=True,
-                            size="xl",
-                            n_clicks=0,
-                        )
-                    ],
-                    position="center",
+                dmc.Text(
+                    children="project!",
+                    size=60,
+                    weight=800,
+                    variant="text",
                 ),
             ],
+            position="center",
+        ),
+        dmc.Group(
+            [
+                html.Img(
+                    src=kwargs["avatar_options"]["src"],
+                    style={
+                        "width": "30%",
+                        "height": "auto",
+                        "textAlign": "center",
+                    },
+                ),
+            ],
+            position="center",
+        ),
+    ]
+
+    if not current_user.is_authenticated:
+        children += [
+            dmc.Group(
+                [
+                    dmc.Text(
+                        children="Log in to access the app.",
+                        size=40,
+                    ),
+                ],
+                position="center",
+            ),
+            html.Br(),
+            html.Br(),
+            html.Br(),
+            dmc.Group(
+                [
+                    dmc.Button(
+                        "Log in",
+                        id="log-in-button-from-card",
+                        # loading=True,
+                        variant="gradient",
+                        # fullWidth=True,
+                        size="xl",
+                        n_clicks=0,
+                    )
+                ],
+                position="center",
+            ),
+        ]
+
+    return html.Div(
+        dmc.Card(
+            children=children,
             shadow="lg",
             withBorder=True,
             style={
