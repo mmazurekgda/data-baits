@@ -1,7 +1,6 @@
 from dash import html
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
-from flask_login import current_user
 
 
 def create_login_modal(**kwargs) -> dmc.Modal:
@@ -56,7 +55,9 @@ def create_login_modal(**kwargs) -> dmc.Modal:
     )
 
 
-def create_default_not_logged_in_layout(**kwargs) -> html.Div:
+def create_default_not_logged_in_layout(
+    logged_in: bool = False, **kwargs
+) -> html.Div:
     children = [
         dmc.Group(
             [
@@ -96,7 +97,7 @@ def create_default_not_logged_in_layout(**kwargs) -> html.Div:
         ),
     ]
 
-    if not current_user.is_authenticated:
+    if not logged_in:
         children += [
             dmc.Group(
                 [
@@ -121,6 +122,18 @@ def create_default_not_logged_in_layout(**kwargs) -> html.Div:
                         size="xl",
                         n_clicks=0,
                     )
+                ],
+                position="center",
+            ),
+        ]
+    else:
+        children += [
+            dmc.Group(
+                [
+                    dmc.Text(
+                        children="You are logged in!",
+                        size=40,
+                    ),
                 ],
                 position="center",
             ),
