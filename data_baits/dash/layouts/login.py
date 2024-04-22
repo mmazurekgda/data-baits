@@ -126,6 +126,18 @@ def create_default_not_logged_in_layout(
                 position="center",
             ),
         ]
+    else:
+        children += [
+            dmc.Group(
+                [
+                    dmc.Text(
+                        children="You are logged in!",
+                        size=40,
+                    ),
+                ],
+                position="center",
+            ),
+        ]
 
     return html.Div(
         dmc.Card(

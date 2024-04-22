@@ -65,7 +65,12 @@ def generate_display_content_callback(core_layouts, layouts, **kwargs):
                 else:
                     failed_login_alert_hidden = False
                     if not page_content:
-                        page_content = core_layouts["main_not_logged"]["html"]
+                        if current_user.is_authenticated:
+                            page_content = core_layouts["main_logged"]["html"]
+                        else:
+                            page_content = core_layouts["main_not_logged"][
+                                "html"
+                            ]
                 is_core = False
         if is_core:
             if pathname == "/":
