@@ -117,6 +117,13 @@ def create_dash_app(
     }
 
     core_layouts = {
+        # TODO: refactor this
+        "main_logged": {
+            "path": "/",
+            "html": create_default_not_logged_in_layout(
+                logged_in=True, **kwargs
+            ),
+        },
         "main_not_logged": {
             "path": "/",
             "html": create_default_not_logged_in_layout(**kwargs),
