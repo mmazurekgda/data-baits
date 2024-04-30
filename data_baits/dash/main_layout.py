@@ -28,11 +28,20 @@ def create_default_scaffolding(**kwargs) -> html.Div:
                 withCloseButton=True,
                 hide=True,
             ),
-            html.Br(),
             dmc.LoadingOverlay(
-                html.Div([], id="page-content"),
+                html.Div(
+                    [],
+                    id="page-content",
+                    style={
+                        "height": "100%",
+                        # "display": "flex",
+                        # "flexFlow": "column",
+                    },
+                ),
+                style={"height": "100%"},
             ),
-        ]
+        ],
+        style={"height": "100%"},
     )
 
 
@@ -60,6 +69,9 @@ def create_default_main_layout(
         children=[
             dmc.AppShell(
                 id="",
+                zIndex=100,
+                padding=8,
+                # hidden=True,
                 children=[
                     create_main_scaffolding(**kwargs),
                 ],
