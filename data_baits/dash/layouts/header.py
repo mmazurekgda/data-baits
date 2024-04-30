@@ -12,6 +12,9 @@ def create_default_header(**kwargs) -> dmc.Header:
                         dmc.Avatar(**kwargs["avatar_options"]),
                         href="/",
                         refresh=False,
+                        style={
+                            "height": "35px",
+                        },
                     ),
                     dmc.Text(
                         children=kwargs["app_name"],
@@ -22,9 +25,9 @@ def create_default_header(**kwargs) -> dmc.Header:
                         style={
                             "color": "dark",
                             "paddingLeft": "10px",
-                            "paddingTop": "2px",
+                            # "paddingTop": "2px",
                         },
-                        className="hidden-below-sm",
+                        className="hidden-below-width",
                     ),
                     dmc.Text(
                         children=f"v{kwargs['app_version']}",
@@ -37,7 +40,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                             "verticalAlign": "bottom",
                             "paddingTop": "17px",
                         },
-                        className="hidden-below-sm",
+                        className="hidden-below-width",
                     ),
                     dmc.Text(
                         children=kwargs["app_version_dev"],
@@ -50,7 +53,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                             "verticalAlign": "bottom",
                             "paddingTop": "0px",
                         },
-                        className="hidden-below-sm",
+                        className="hidden-below-width",
                     ),
                     dmc.Button(
                         DashIconify(
@@ -63,7 +66,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                             "marginLeft": "15px",
                         },
                         variant="outline",
-                        className="hidden-above-sm",
+                        className="hidden-above-width",
                         n_clicks=0,
                     ),
                 ],
@@ -72,6 +75,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                     "display": "flex",
                     "justifyContent": "center",
                     "alignItems": "center",
+                    "minHeight": "70px",
                 },
             ),
             dmc.Col(
@@ -130,7 +134,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                     "alignItems": "center",
                     "justifyContent": "flex-end",
                 },
-                # className="hidden-above-sm",
+                # className="hidden-above-width",
             ),
         ],
         justify="space-between",
@@ -138,17 +142,17 @@ def create_default_header(**kwargs) -> dmc.Header:
         align="center",
         style={
             # "width": "300px",
-            "height": "80px",
+            "height": "50px",
             "paddingLeft": "15px",
             "mx": "auto",
-            "marginBottom": "-20px",
+            # "marginBottom": "-20px",
         },
     )
     return dmc.Header(
         children=[
             avatar_box,
         ],
-        height=80,
+        height=60,
         withBorder=True,
         # fixed=True,
         style={

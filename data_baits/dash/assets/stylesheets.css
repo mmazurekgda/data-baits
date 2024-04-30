@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Dosis&display=swap');
 
 /* hide on small screens */
-@media only screen and (max-width: 768px) {
-  .hidden-below-sm {
+@media only screen and (max-width: 992px) {
+  .hidden-below-width {
       display: none !important;
   }
 }
-@media only screen and (min-width: 768px) {
-  .hidden-above-sm {
+@media only screen and (min-width: 992px) {
+  .hidden-above-width {
       display: none !important;
   }
 }

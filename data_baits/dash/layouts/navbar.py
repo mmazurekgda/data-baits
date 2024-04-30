@@ -10,22 +10,24 @@ def create_default_main_navbar(
 ) -> dmc.Navbar:
     navbar = dmc.Navbar(
         id="left-navbar",
-        p="md",
+        p="xs",
         height="100vh",
         width={
-            "sm": 300,
+            "md": 250,
         },
         children=[
-            html.H3(
-                "Log in to see the menu!",
-                id="left-navbar-header",
-                style={
-                    "textAlign": "center",
-                },
-            ),
+            dmc.Center(
+                html.H3(
+                    "Log in to see the menu!",
+                    id="left-navbar-header",
+                    style={
+                        "textAlign": "center",
+                    },
+                ),
+            )
         ],
         withBorder=True,
-        className="hidden-below-sm",
+        className="hidden-below-width",
         style={
             "backgroundColor": "dimmed",
         },

@@ -10,10 +10,10 @@ def generate_toggle_navbar_collapse_callback():
         prevent_initial_call=True,
     )
     def toggle_navbar_collapse(_, className):
-        if "hidden-below-sm" in className:
-            className = className.replace("hidden-below-sm", "")
+        if "hidden-below-width" in className:
+            className = className.replace("hidden-below-width", "")
         else:
-            className += " hidden-below-sm"
+            className += " hidden-below-width"
         return className
 
     return toggle_navbar_collapse
