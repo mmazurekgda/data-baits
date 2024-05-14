@@ -4,6 +4,7 @@ import dash_mantine_components as dmc
 
 
 def create_default_header(**kwargs) -> dmc.Header:
+    extra_header_components = kwargs.get("extra_header_components", [])
     avatar_box = dmc.Grid(
         children=[
             dmc.Col(
@@ -82,6 +83,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                 children=[
                     dmc.Group(
                         [
+                            *extra_header_components,
                             dmc.Switch(
                                 id="color-scheme-switch",
                                 size="md",
@@ -95,6 +97,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                                     icon="ic:round-light-mode",
                                     height=15,
                                 ),
+                                color="gray",
                                 disabled=True,
                             ),
                             dmc.Button(
@@ -116,6 +119,7 @@ def create_default_header(**kwargs) -> dmc.Header:
                                 id="log-out-button-from-header",
                                 # loading=True,
                                 variant="subtle",
+                                color="gray",
                                 # fullWidth=True,
                                 size="sm",
                                 n_clicks=0,

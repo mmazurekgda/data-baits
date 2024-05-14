@@ -56,6 +56,7 @@ def create_dash_app(
     external_stylesheets: List[str] = [],
     external_scripts: List[str] = [],
     server_name: str = __name__,
+    extra_kwargs: dict = {},
     **add_kwargs,
 ) -> dash.Dash:
     server = Flask(server_name)
@@ -114,6 +115,7 @@ def create_dash_app(
         "avatar_options": avatar_options,
         "user_class": user_class,
         "get_role": get_role,
+        **extra_kwargs,
     }
 
     core_layouts = {
