@@ -7,6 +7,7 @@ from data_baits import __version__
 class Environments(str, Enum):
     dev = "development"
     prod = "production"
+    test = "testing"
 
 
 class Settings(BaseSettings):
